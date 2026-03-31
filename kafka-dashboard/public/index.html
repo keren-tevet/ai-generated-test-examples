@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kafka Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Kafka Dashboard</h1>
+      <p class="subtitle">Monitor your Aiven Kafka services</p>
+    </header>
+
+    <div class="controls">
+      <div class="select-group">
+        <label for="project-select">Project</label>
+        <select id="project-select">
+          <option value="">Select a project...</option>
+        </select>
+      </div>
+      <div class="select-group">
+        <label for="service-select">Kafka Service</label>
+        <select id="service-select" disabled>
+          <option value="">Select a service...</option>
+        </select>
+      </div>
+      <button id="refresh-btn" class="btn">Refresh</button>
+    </div>
+
+    <div id="service-info" class="card hidden">
+      <h2>Service Details</h2>
+      <div class="service-grid" id="service-details"></div>
+    </div>
+
+    <div id="topics-section" class="hidden">
+      <h2>Topics <span id="topic-count" class="badge"></span></h2>
+      <div class="topics-grid" id="topics-list"></div>
+    </div>
+
+    <div id="messages-section" class="card hidden">
+      <div class="messages-header">
+        <h2>Messages from <span id="current-topic"></span></h2>
+        <button id="close-messages" class="btn btn-small">Close</button>
+      </div>
+      <div class="messages-controls">
+        <label>
+          Partition:
+          <input type="number" id="partition-input" value="0" min="0">
+        </label>
+        <label>
+          Offset:
+          <input type="number" id="offset-input" value="0" min="0">
+        </label>
+        <label>
+          Format:
+          <select id="format-select">
+            <option value="json">JSON</option>
+            <option value="binary">Binary</option>
+          </select>
+        </label>
+        <button id="consume-btn" class="btn">Consume Messages</button>
+      </div>
+      <div id="messages-list" class="messages-list"></div>
+    </div>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <span>Loading...</span>
+    </div>
+
+    <div id="error-toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
