@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kafka Events Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid #334155;
+    }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .header .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: 1rem;
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .status-dot.connected { background: #22c55e; }
+    .container { padding: 1.5rem 2rem; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: #1e293b;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      border: 1px solid #334155;
+    }
+    .stat-card .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    .chart-card {
+      background: #1e293b;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      border: 1px solid #334155;
+    }
+    .chart-card h3 {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 1rem;
+    }
+    .chart-container { height: 250px; position: relative; }
+    .events-section {
+      background: #1e293b;
+      border-radius: 0.75rem;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+    .events-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #334155;
+      font-weight: 500;
+    }
+    .events-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .event-item {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid #1e293b;
+      font-size: 0.875rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: background 0.15s;
+    }
+    .event-item:hover { background: #334155; }
+    .event-item:last-child { border-bottom: none; }
+    .event-type {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      min-width: 80px;
+      text-align: center;
+    }
+    .event-type.page_view { background: #3b82f6; }
+    .event-type.click { background: #8b5cf6; }
+    .event-type.purchase { background: #22c55e; }
+    .event-type.signup { background: #f59e0b; }
+    .event-type.error { background: #ef4444; }
+    .event-type.api_call { background: #06b6d4; }
+    .event-type.raw, .event-type.unknown { background: #64748b; }
+    .event-time { color: #64748b; min-width: 100px; }
+    .event-data { color: #cbd5e1; flex: 1; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Kafka Events Dashboard</h1>
+    <span class="status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting...</span>
+    </span>
+  </div>
+
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Total Events</div>
+        <div class="value" id="totalEvents">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Events/min</div>
+        <div class="value" id="eventsPerMin">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Event Types</div>
+        <div class="value" id="eventTypes">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Last Event</div>
+        <div class="value" id="lastEvent" style="font-size: 1rem;">-</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Events by Type</h3>
+        <div class="chart-container">
+          <canvas id="typeChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Events Over Time</h3>
+        <div class="chart-container">
+          <canvas id="timeChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="events-section">
+      <div class="events-header">Recent Events</div>
+      <div class="events-list" id="eventsList"></div>
+    </div>
+  </div>
+
+  <script>
+    const typeColors = {
+      page_view: '#3b82f6',
+      click: '#8b5cf6',
+      purchase: '#22c55e',
+      signup: '#f59e0b',
+      error: '#ef4444',
+      api_call: '#06b6d4',
+      raw: '#64748b',
+      unknown: '#64748b'
+    };
+
+    let typeChart, timeChart;
+    const timeData = { labels: [], data: [] };
+
+    function initCharts() {
+      const typeCtx = document.getElementById('typeChart').getContext('2d');
+      typeChart = new Chart(typeCtx, {
+        type: 'doughnut',
+        data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } } }
+        }
+      });
+
+      const timeCtx = document.getElementById('timeChart').getContext('2d');
+      timeChart = new Chart(timeCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Events',
+            data: [],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: '#334155' }, ticks: { color: '#64748b' } },
+            y: { grid: { color: '#334155' }, ticks: { color: '#64748b' }, beginAtZero: true }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function updateStats(stats) {
+      document.getElementById('totalEvents').textContent = stats.totalEvents.toLocaleString();
+      document.getElementById('eventTypes').textContent = Object.keys(stats.eventsByType).length;
+
+      const lastMinute = stats.eventsPerMinute[stats.eventsPerMinute.length - 1];
+      document.getElementById('eventsPerMin').textContent = lastMinute?.count || 0;
+
+      // Update type chart
+      const types = Object.entries(stats.eventsByType);
+      typeChart.data.labels = types.map(([k]) => k);
+      typeChart.data.datasets[0].data = types.map(([, v]) => v);
+      typeChart.data.datasets[0].backgroundColor = types.map(([k]) => typeColors[k] || '#64748b');
+      typeChart.update('none');
+
+      // Update time chart
+      if (stats.eventsPerMinute.length) {
+        timeChart.data.labels = stats.eventsPerMinute.map(d =>
+          new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        );
+        timeChart.data.datasets[0].data = stats.eventsPerMinute.map(d => d.count);
+        timeChart.update('none');
+      }
+    }
+
+    function addEvent(event) {
+      const list = document.getElementById('eventsList');
+      const time = new Date(event.receivedAt || event.timestamp).toLocaleTimeString();
+      const { type, receivedAt, topic, partition, offset, ...rest } = event;
+
+      const item = document.createElement('div');
+      item.className = 'event-item';
+      item.innerHTML = `
+        <span class="event-type ${type}">${type}</span>
+        <span class="event-time">${time}</span>
+        <span class="event-data">${JSON.stringify(rest)}</span>
+      `;
+
+      list.insertBefore(item, list.firstChild);
+      if (list.children.length > 100) list.removeChild(list.lastChild);
+
+      document.getElementById('lastEvent').textContent = type;
+    }
+
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${location.host}`);
+
+      ws.onopen = () => {
+        document.getElementById('statusDot').classList.add('connected');
+        document.getElementById('statusText').textContent = 'Connected';
+      };
+
+      ws.onclose = () => {
+        document.getElementById('statusDot').classList.remove('connected');
+        document.getElementById('statusText').textContent = 'Reconnecting...';
+        setTimeout(connect, 2000);
+      };
+
+      ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        if (data.type === 'init') {
+          updateStats(data.stats);
+          data.events.forEach(addEvent);
+        } else if (data.type === 'event') {
+          updateStats(data.stats);
+          addEvent(data.event);
+        }
+      };
+    }
+
+    initCharts();
+    connect();
+  </script>
+</body>
+</html>
