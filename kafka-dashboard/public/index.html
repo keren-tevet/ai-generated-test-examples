@@ -10,32 +10,24 @@
   <div class="container">
     <header>
       <h1>Kafka Dashboard</h1>
-      <p class="subtitle">Monitor your Aiven Kafka services</p>
+      <p class="subtitle">Connected to Aiven Kafka</p>
     </header>
 
-    <div class="controls">
-      <div class="select-group">
-        <label for="project-select">Project</label>
-        <select id="project-select">
-          <option value="">Select a project...</option>
-        </select>
+    <div id="service-info" class="card">
+      <h2>Cluster Info</h2>
+      <div class="service-grid" id="service-details">
+        <div class="service-stat">
+          <div class="label">Status</div>
+          <div class="value" id="status">Loading...</div>
+        </div>
       </div>
-      <div class="select-group">
-        <label for="service-select">Kafka Service</label>
-        <select id="service-select" disabled>
-          <option value="">Select a service...</option>
-        </select>
-      </div>
-      <button id="refresh-btn" class="btn">Refresh</button>
     </div>
 
-    <div id="service-info" class="card hidden">
-      <h2>Service Details</h2>
-      <div class="service-grid" id="service-details"></div>
-    </div>
-
-    <div id="topics-section" class="hidden">
-      <h2>Topics <span id="topic-count" class="badge"></span></h2>
+    <div id="topics-section">
+      <div class="section-header">
+        <h2>Topics <span id="topic-count" class="badge"></span></h2>
+        <button id="refresh-btn" class="btn">Refresh</button>
+      </div>
       <div class="topics-grid" id="topics-list"></div>
     </div>
 
@@ -54,11 +46,8 @@
           <input type="number" id="offset-input" value="0" min="0">
         </label>
         <label>
-          Format:
-          <select id="format-select">
-            <option value="json">JSON</option>
-            <option value="binary">Binary</option>
-          </select>
+          Limit:
+          <input type="number" id="limit-input" value="10" min="1" max="100">
         </label>
         <button id="consume-btn" class="btn">Consume Messages</button>
       </div>

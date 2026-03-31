@@ -46,44 +46,18 @@ header h1 {
   color: var(--text-muted);
 }
 
-.controls {
+.section-header {
   display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.select-group {
+.section-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.select-group label {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-}
-
-select, input {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 0.625rem 1rem;
-  border-radius: 6px;
-  font-size: 0.9375rem;
-  min-width: 220px;
-  cursor: pointer;
-}
-
-select:focus, input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  align-items: center;
 }
 
 .btn {
@@ -142,7 +116,7 @@ select:disabled {
 }
 
 .service-stat .value {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
 }
 
@@ -154,14 +128,6 @@ select:disabled {
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
   margin-left: 0.5rem;
-}
-
-#topics-section h2 {
-  margin-bottom: 1rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
 }
 
 .topics-grid {
@@ -197,12 +163,6 @@ select:disabled {
   color: var(--text-muted);
 }
 
-.topic-meta span {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
 .status-active {
   color: var(--success);
 }
@@ -235,18 +195,34 @@ select:disabled {
 
 .messages-controls input {
   width: 80px;
-  min-width: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
 }
 
-.messages-controls select {
-  min-width: auto;
+.messages-controls input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .messages-list {
   background: var(--bg);
   border-radius: 6px;
-  max-height: 400px;
+  max-height: 500px;
   overflow-y: auto;
+}
+
+.partition-info {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .message-item {
@@ -333,12 +309,9 @@ select:disabled {
     padding: 1rem;
   }
 
-  .controls {
+  .section-header {
     flex-direction: column;
-    align-items: stretch;
-  }
-
-  select {
-    min-width: 100%;
+    align-items: flex-start;
+    gap: 1rem;
   }
 }
