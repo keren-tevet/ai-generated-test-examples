@@ -1,9 +1,15 @@
 import pg from 'pg';
 
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+function getDbConfig() {
+  const url = new URL(process.env.DATABASE_URL);
+  url.searchParams.delete('sslmode');
+  const ssl = process.env.PROJECT_CA_CERT
+    ? { ca: Buffer.from(process.env.PROJECT_CA_CERT, 'base64').toString() }
+    : { rejectUnauthorized: false };
+  return { connectionString: url.toString(), ssl };
+}
+
+const pool = new pg.Pool(getDbConfig());
 
 async function setup() {
   console.log('Setting up database...');
