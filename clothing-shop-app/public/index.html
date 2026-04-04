@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreadHaven - Clothing Shop</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+    header { background: #1a1a2e; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 1.5rem; font-weight: 600; }
+    nav { display: flex; gap: 1rem; }
+    nav button { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    nav button.active, nav button:hover { background: rgba(255,255,255,0.1); }
+    main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .filters { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .filters select, .filters input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+    .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s; }
+    .product-card:hover { transform: translateY(-4px); }
+    .product-image { height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; }
+    .product-info { padding: 1rem; }
+    .product-info h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+    .product-info .category { font-size: 0.75rem; color: #888; text-transform: uppercase; }
+    .product-info .price { font-size: 1.25rem; font-weight: 600; color: #1a1a2e; margin-top: 0.5rem; }
+    .product-info .stock { font-size: 0.875rem; color: #666; }
+    .stock.low { color: #e74c3c; }
+    .orders-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; }
+    .orders-table th, .orders-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+    .orders-table th { background: #f8f9fa; font-weight: 600; }
+    .status { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+    .status.pending { background: #fff3cd; color: #856404; }
+    .status.shipped { background: #cce5ff; color: #004085; }
+    .status.delivered { background: #d4edda; color: #155724; }
+    .inventory-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+    .inventory-card { background: white; padding: 1.5rem; border-radius: 8px; text-align: center; }
+    .inventory-card h3 { color: #1a1a2e; margin-bottom: 1rem; }
+    .inventory-card .stat { font-size: 2rem; font-weight: 700; color: #667eea; }
+    .inventory-card .label { font-size: 0.875rem; color: #888; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ThreadHaven</h1>
+    <nav>
+      <button class="active" data-view="products">Products</button>
+      <button data-view="orders">Orders</button>
+      <button data-view="inventory">Inventory</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="products-view">
+      <div class="filters">
+        <select id="category-filter">
+          <option value="">All Categories</option>
+        </select>
+        <input type="number" id="min-price" placeholder="Min Price">
+        <input type="number" id="max-price" placeholder="Max Price">
+        <button onclick="loadProducts()">Filter</button>
+      </div>
+      <div class="products-grid" id="products-grid"></div>
+    </section>
+
+    <section id="orders-view" class="hidden">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </section>
+
+    <section id="inventory-view" class="hidden">
+      <div class="inventory-cards" id="inventory-cards"></div>
+    </section>
+  </main>
+
+  <script>
+    const icons = { 'T-Shirts': '👕', 'Pants': '👖', 'Dresses': '👗', 'Shoes': '👟', 'Jackets': '🧥', 'Accessories': '👜' };
+
+    async function loadProducts() {
+      const category = document.getElementById('category-filter').value;
+      const minPrice = document.getElementById('min-price').value;
+      const maxPrice = document.getElementById('max-price').value;
+
+      const params = new URLSearchParams();
+      if (category) params.set('category', category);
+      if (minPrice) params.set('min_price', minPrice);
+      if (maxPrice) params.set('max_price', maxPrice);
+
+      const res = await fetch('/api/products?' + params);
+      const products = await res.json();
+
+      document.getElementById('products-grid').innerHTML = products.map(p => `
+        <div class="product-card">
+          <div class="product-image">${icons[p.category] || '👔'}</div>
+          <div class="product-info">
+            <span class="category">${p.category}</span>
+            <h3>${p.name}</h3>
+            <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+            <div class="stock ${p.stock < 10 ? 'low' : ''}">${p.stock} in stock</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadCategories() {
+      const res = await fetch('/api/categories');
+      const categories = await res.json();
+      const select = document.getElementById('category-filter');
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        select.appendChild(opt);
+      });
+    }
+
+    async function loadOrders() {
+      const res = await fetch('/api/orders');
+      const orders = await res.json();
+      document.getElementById('orders-body').innerHTML = orders.map(o => `
+        <tr>
+          <td>#${o.id}</td>
+          <td>${o.customer_name}<br><small>${o.customer_email}</small></td>
+          <td>$${parseFloat(o.total).toFixed(2)}</td>
+          <td><span class="status ${o.status}">${o.status}</span></td>
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadInventory() {
+      const res = await fetch('/api/inventory');
+      const inv = await res.json();
+      document.getElementById('inventory-cards').innerHTML = inv.map(i => `
+        <div class="inventory-card">
+          <h3>${icons[i.category] || '👔'} ${i.category}</h3>
+          <div class="stat">${i.product_count}</div>
+          <div class="label">Products</div>
+          <div style="margin-top:1rem">
+            <div class="stat">${i.total_stock}</div>
+            <div class="label">Total Stock</div>
+          </div>
+          <div style="margin-top:1rem">
+            <div class="stat">$${i.avg_price}</div>
+            <div class="label">Avg Price</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.querySelectorAll('nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+        const view = btn.dataset.view;
+        document.getElementById(view + '-view').classList.remove('hidden');
+
+        if (view === 'orders') loadOrders();
+        if (view === 'inventory') loadInventory();
+      });
+    });
+
+    loadCategories();
+    loadProducts();
+  </script>
+</body>
+</html>
