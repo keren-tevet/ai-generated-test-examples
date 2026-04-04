@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kafka Pulse Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --border: #1f1f2e;
+      --text-primary: #f0f0f5;
+      --text-secondary: #6b6b80;
+      --accent-green: #00ff88;
+      --accent-blue: #00d4ff;
+      --accent-purple: #a855f7;
+      --accent-orange: #ff6b35;
+      --accent-pink: #ff0080;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(90deg, var(--bg-card) 0%, #1a1a2e 100%);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    .pulse-dot.offline { background: #ff4444; animation: none; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+    }
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .status { margin-left: auto; font-size: 0.75rem; color: var(--text-secondary); }
+    .container { padding: 1.5rem; display: grid; gap: 1.5rem; }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+    }
+    @media (max-width: 1000px) { .metrics-row { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px) { .metrics-row { grid-template-columns: repeat(2, 1fr); } }
+    .metric {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .metric-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-value.green { color: var(--accent-green); }
+    .metric-value.blue { color: var(--accent-blue); }
+    .metric-value.purple { color: var(--accent-purple); }
+    .metric-value.orange { color: var(--accent-orange); }
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .card-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+    .chart-wrap { height: 200px; }
+    .topics-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .topic-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      background: rgba(255,255,255,0.02);
+      border-radius: 4px;
+    }
+    .topic-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+    .topic-name { flex: 1; font-size: 0.8rem; }
+    .topic-count {
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .events-section { margin-top: 0.5rem; }
+    .events-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .events-header h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+    }
+    .filter-select {
+      padding: 0.35rem 0.75rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 0.75rem;
+      font-family: inherit;
+    }
+    .events-list {
+      max-height: 350px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .event-row {
+      display: grid;
+      grid-template-columns: 90px 100px 80px 1fr;
+      gap: 1rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255,255,255,0.02);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      align-items: center;
+    }
+    .event-row:hover { background: rgba(255,255,255,0.05); }
+    .event-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .event-topic {
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .event-type {
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      background: var(--border);
+      font-size: 0.65rem;
+      text-align: center;
+    }
+    .event-data {
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="pulse-dot" id="pulseIndicator"></div>
+      <h1>KAFKA PULSE MONITOR</h1>
+    </div>
+    <div class="status" id="connectionStatus">Connecting...</div>
+  </div>
+
+  <div class="container">
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-label">Total Events</div>
+        <div class="metric-value green" id="totalEvents">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Events/sec</div>
+        <div class="metric-value blue" id="throughput">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Active Topics</div>
+        <div class="metric-value purple" id="topicCount">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Event Types</div>
+        <div class="metric-value orange" id="typeCount">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Last Event</div>
+        <div class="metric-value" id="lastEvent" style="font-size: 0.9rem; color: var(--text-secondary);">--:--:--</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">Throughput (events/sec)</div>
+        <div class="chart-wrap"><canvas id="throughputChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Events by Topic</div>
+        <div class="topics-list" id="topicsList"></div>
+      </div>
+    </div>
+
+    <div class="card events-section">
+      <div class="events-header">
+        <h3>Live Event Stream</h3>
+        <select class="filter-select" id="topicFilter">
+          <option value="">All Topics</option>
+        </select>
+      </div>
+      <div class="events-list" id="eventsList"></div>
+    </div>
+  </div>
+
+  <script>
+    const topicColors = {
+      'login-events': '#00ff88',
+      'order-events': '#ff6b35',
+      'payment-events': '#a855f7',
+      'shipping-events': '#00d4ff',
+      'user-events': '#ff0080',
+      'sensor-readings': '#ffd700'
+    };
+    const defaultColor = '#6b6b80';
+    const getTopicColor = (t) => topicColors[t] || defaultColor;
+
+    let throughputChart;
+    const allEvents = [];
+    const knownTopics = new Set();
+
+    function initChart() {
+      const ctx = document.getElementById('throughputChart').getContext('2d');
+      throughputChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array(60).fill(''),
+          datasets: [{
+            data: Array(60).fill(0),
+            borderColor: '#00d4ff',
+            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 0 },
+          scales: {
+            x: { display: false },
+            y: { display: true, grid: { color: '#1f1f2e' }, ticks: { color: '#6b6b80', font: { size: 10 } }, beginAtZero: true }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function updateMetrics(stats) {
+      document.getElementById('totalEvents').textContent = stats.totalEvents.toLocaleString();
+      document.getElementById('throughput').textContent = stats.throughput?.current || 0;
+      document.getElementById('topicCount').textContent = Object.keys(stats.eventsByTopic || {}).length;
+      document.getElementById('typeCount').textContent = Object.keys(stats.eventsByType || {}).length;
+      if (stats.lastEventTime) {
+        document.getElementById('lastEvent').textContent = new Date(stats.lastEventTime).toLocaleTimeString();
+      }
+      updateTopicsList(stats.eventsByTopic || {});
+    }
+
+    function updateTopicsList(byTopic) {
+      const list = document.getElementById('topicsList');
+      const sorted = Object.entries(byTopic).sort((a, b) => b[1] - a[1]);
+      list.innerHTML = sorted.map(([topic, count]) => `
+        <div class="topic-row">
+          <div class="topic-color" style="background: ${getTopicColor(topic)}"></div>
+          <div class="topic-name">${topic}</div>
+          <div class="topic-count">${count.toLocaleString()}</div>
+        </div>
+      `).join('');
+    }
+
+    function updateThroughputChart(history) {
+      if (!history || !history.length) return;
+      const data = history.slice(-60).map(h => h.count);
+      while (data.length < 60) data.unshift(0);
+      throughputChart.data.datasets[0].data = data;
+      throughputChart.update('none');
+    }
+
+    function addEvent(event) {
+      const filter = document.getElementById('topicFilter');
+      const topic = event.topic || 'unknown';
+
+      if (!knownTopics.has(topic)) {
+        knownTopics.add(topic);
+        const opt = document.createElement('option');
+        opt.value = topic;
+        opt.textContent = topic;
+        filter.appendChild(opt);
+      }
+
+      allEvents.unshift(event);
+      if (allEvents.length > 200) allEvents.pop();
+
+      renderEvent(event, filter.value);
+    }
+
+    function renderEvent(event, filterTopic) {
+      if (filterTopic && event.topic !== filterTopic) return;
+      const list = document.getElementById('eventsList');
+      const { type, topic, receivedAt, partition, offset, ...rest } = event;
+      const time = new Date(receivedAt || Date.now()).toLocaleTimeString();
+      const row = document.createElement('div');
+      row.className = 'event-row';
+      row.innerHTML = `
+        <span class="event-time">${time}</span>
+        <span class="event-topic" style="background: ${getTopicColor(topic)}">${topic || 'unknown'}</span>
+        <span class="event-type">${type || 'raw'}</span>
+        <span class="event-data">${JSON.stringify(rest)}</span>
+      `;
+      list.insertBefore(row, list.firstChild);
+      if (list.children.length > 100) list.removeChild(list.lastChild);
+    }
+
+    function filterEvents() {
+      const list = document.getElementById('eventsList');
+      const selected = document.getElementById('topicFilter').value;
+      list.innerHTML = '';
+      allEvents.filter(e => !selected || e.topic === selected).slice(0, 100).forEach(e => renderEvent(e, ''));
+    }
+
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${protocol}//${location.host}`);
+
+      ws.onopen = () => {
+        document.getElementById('pulseIndicator').classList.remove('offline');
+        document.getElementById('connectionStatus').textContent = 'Connected';
+      };
+
+      ws.onclose = () => {
+        document.getElementById('pulseIndicator').classList.add('offline');
+        document.getElementById('connectionStatus').textContent = 'Reconnecting...';
+        setTimeout(connect, 2000);
+      };
+
+      ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        if (data.type === 'init') {
+          updateMetrics(data.stats);
+          updateThroughputChart(data.stats.throughput?.history);
+          data.events.forEach(e => addEvent(e));
+        } else if (data.type === 'event') {
+          updateMetrics(data.stats);
+          addEvent(data.event);
+        } else if (data.type === 'throughput') {
+          document.getElementById('throughput').textContent = data.data.current;
+          updateThroughputChart(data.data.history);
+        }
+      };
+    }
+
+    initChart();
+    connect();
+    document.getElementById('topicFilter').addEventListener('change', filterEvents);
+  </script>
+</body>
+</html>
