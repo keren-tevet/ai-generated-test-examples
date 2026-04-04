@@ -102,10 +102,23 @@ app.get('/search', async (req: Request, res: Response) => {
 
     if (q) {
       must.push({
-        multi_match: {
-          query: q as string,
-          fields: ['name^2', 'description', 'brand'],
-          fuzziness: 'AUTO',
+        bool: {
+          should: [
+            {
+              multi_match: {
+                query: q as string,
+                fields: ['name^3', 'description', 'brand^2'],
+                type: 'bool_prefix',
+              },
+            },
+            {
+              multi_match: {
+                query: q as string,
+                fields: ['name^2', 'description', 'brand'],
+                fuzziness: 'AUTO',
+              },
+            },
+          ],
         },
       });
     }
