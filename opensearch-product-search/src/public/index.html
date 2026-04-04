@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Search</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #e4e4e7;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #a1a1aa;
+      font-size: 1rem;
+    }
+
+    .search-section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .search-input::placeholder { color: #71717a; }
+    .search-input:focus { background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3); }
+
+    .search-btn {
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .search-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4); }
+
+    .filters {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .filter-group label {
+      font-size: 0.75rem;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-select, .filter-input {
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      min-width: 140px;
+    }
+
+    .filter-select option { background: #1a1a2e; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .results-count {
+      color: #a1a1aa;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .product-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .product-category {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: rgba(6, 182, 212, 0.2);
+      color: #06b6d4;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+    }
+
+    .product-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .product-brand {
+      color: #a1a1aa;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .product-description {
+      color: #71717a;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product-price {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #10b981;
+    }
+
+    .product-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: #fbbf24;
+    }
+
+    .star { font-size: 0.9rem; }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #a1a1aa;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #06b6d4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #71717a;
+    }
+
+    .empty-state svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 640px) {
+      .search-bar { flex-direction: column; }
+      .filters { flex-direction: column; }
+      .filter-group { width: 100%; }
+      .filter-select, .filter-input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Product Search</h1>
+      <p class="subtitle">Powered by Aiven OpenSearch</p>
+    </header>
+
+    <section class="search-section">
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search for products..." autofocus>
+        <button class="search-btn" onclick="search()">Search</button>
+      </div>
+      <div class="filters">
+        <div class="filter-group">
+          <label>Category</label>
+          <select class="filter-select" id="categoryFilter" onchange="search()">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Brand</label>
+          <select class="filter-select" id="brandFilter" onchange="search()">
+            <option value="">All Brands</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Min Price</label>
+          <input type="number" class="filter-input" id="minPrice" placeholder="$0" min="0">
+        </div>
+        <div class="filter-group">
+          <label>Max Price</label>
+          <input type="number" class="filter-input" id="maxPrice" placeholder="$999" min="0">
+        </div>
+      </div>
+    </section>
+
+    <div class="results-header">
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+
+    <div id="results" class="results-grid"></div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const brandFilter = document.getElementById('brandFilter');
+    const minPrice = document.getElementById('minPrice');
+    const maxPrice = document.getElementById('maxPrice');
+    const resultsContainer = document.getElementById('results');
+    const resultsCount = document.getElementById('resultsCount');
+
+    // Load filters on page load
+    async function loadFilters() {
+      try {
+        const [categoriesRes, brandsRes] = await Promise.all([
+          fetch('/categories'),
+          fetch('/brands')
+        ]);
+
+        const categories = await categoriesRes.json();
+        const brands = await brandsRes.json();
+
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.name;
+          option.textContent = `${cat.name} (${cat.count})`;
+          categoryFilter.appendChild(option);
+        });
+
+        brands.forEach(brand => {
+          const option = document.createElement('option');
+          option.value = brand.name;
+          option.textContent = `${brand.name} (${brand.count})`;
+          brandFilter.appendChild(option);
+        });
+      } catch (e) {
+        console.error('Failed to load filters:', e);
+      }
+    }
+
+    function showLoading() {
+      resultsContainer.innerHTML = `
+        <div class="loading" style="grid-column: 1/-1;">
+          <div class="spinner"></div>
+          <p>Searching products...</p>
+        </div>
+      `;
+    }
+
+    function showEmpty(message) {
+      resultsContainer.innerHTML = `
+        <div class="empty-state" style="grid-column: 1/-1;">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <p>${message}</p>
+        </div>
+      `;
+      resultsCount.textContent = '';
+    }
+
+    function renderStars(rating) {
+      const full = Math.floor(rating);
+      const half = rating % 1 >= 0.5;
+      let stars = '';
+      for (let i = 0; i < full; i++) stars += '<span class="star">★</span>';
+      if (half) stars += '<span class="star">★</span>';
+      return stars + ` <span style="color: #a1a1aa; font-size: 0.85rem;">${rating.toFixed(1)}</span>`;
+    }
+
+    function renderProducts(products) {
+      if (products.length === 0) {
+        showEmpty('No products found. Try a different search.');
+        return;
+      }
+
+      resultsContainer.innerHTML = products.map(p => `
+        <div class="product-card">
+          <span class="product-category">${p.category}</span>
+          <h3 class="product-name">${p.name}</h3>
+          <p class="product-brand">${p.brand}</p>
+          <p class="product-description">${p.description}</p>
+          <div class="product-footer">
+            <span class="product-price">$${p.price.toFixed(2)}</span>
+            <span class="product-rating">${renderStars(p.rating)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function search() {
+      const params = new URLSearchParams();
+
+      const q = searchInput.value.trim();
+      if (q) params.set('q', q);
+
+      const category = categoryFilter.value;
+      if (category) params.set('category', category);
+
+      const brand = brandFilter.value;
+      if (brand) params.set('brand', brand);
+
+      const min = minPrice.value;
+      if (min) params.set('minPrice', min);
+
+      const max = maxPrice.value;
+      if (max) params.set('maxPrice', max);
+
+      showLoading();
+
+      try {
+        const res = await fetch(`/search?${params}`);
+        const data = await res.json();
+
+        resultsCount.textContent = `${data.total} product${data.total !== 1 ? 's' : ''} found`;
+        renderProducts(data.results);
+      } catch (e) {
+        console.error('Search failed:', e);
+        showEmpty('Search failed. Please try again.');
+      }
+    }
+
+    // Search on Enter key
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') search();
+    });
+
+    // Price filter on blur
+    minPrice.addEventListener('change', search);
+    maxPrice.addEventListener('change', search);
+
+    // Initial load
+    loadFilters();
+    search();
+  </script>
+</body>
+</html>

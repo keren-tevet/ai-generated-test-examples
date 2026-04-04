@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { Client } from '@opensearch-project/opensearch';
+import path from 'path';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -84,6 +85,7 @@ async function seedData() {
 }
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {
