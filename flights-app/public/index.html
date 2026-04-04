@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyBook - Flight Booking</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #e4e4e7;
+    }
+    header {
+      background: rgba(255,255,255,0.05);
+      padding: 1rem 2rem;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    header h1 {
+      font-size: 1.5rem;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+    .search-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .search-card h2 { margin-bottom: 1.5rem; font-weight: 500; }
+    .search-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 1rem;
+      align-items: end;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #a1a1aa;
+      margin-bottom: 0.5rem;
+    }
+    select, input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #60a5fa;
+    }
+    button {
+      padding: 0.75rem 2rem;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+    }
+    .flights-list { display: flex; flex-direction: column; gap: 1rem; }
+    .flight-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto;
+      align-items: center;
+      gap: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .flight-card:hover { border-color: rgba(96,165,250,0.5); }
+    .flight-time { font-size: 1.5rem; font-weight: 600; }
+    .flight-city { color: #a1a1aa; font-size: 0.9rem; }
+    .flight-route {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #60a5fa;
+    }
+    .flight-route span { flex: 1; height: 1px; background: currentColor; }
+    .flight-price { text-align: right; }
+    .flight-price .amount {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #34d399;
+    }
+    .flight-number {
+      font-size: 0.8rem;
+      color: #71717a;
+      margin-bottom: 0.25rem;
+    }
+    .no-flights {
+      text-align: center;
+      padding: 3rem;
+      color: #71717a;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #1e1e2e;
+      border-radius: 16px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 400px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .modal-content h3 { margin-bottom: 1.5rem; }
+    .modal-content .form-group { margin-bottom: 1rem; }
+    .modal-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+    .modal-actions button { flex: 1; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+    }
+    .success-msg {
+      background: rgba(52,211,153,0.1);
+      border: 1px solid #34d399;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      text-align: center;
+    }
+    @media (max-width: 768px) {
+      .search-form { grid-template-columns: 1fr; }
+      .flight-card { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header><h1>SkyBook</h1></header>
+  <div class="container">
+    <div class="search-card">
+      <h2>Search Flights</h2>
+      <form class="search-form" id="searchForm">
+        <div class="form-group">
+          <label>From</label>
+          <select id="origin"><option value="">Any origin</option></select>
+        </div>
+        <div class="form-group">
+          <label>To</label>
+          <select id="destination"><option value="">Any destination</option></select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="date">
+        </div>
+        <button type="submit">Search</button>
+      </form>
+    </div>
+    <div class="flights-list" id="flightsList">
+      <div class="no-flights">Search for flights to see results</div>
+    </div>
+  </div>
+
+  <div class="modal" id="bookingModal">
+    <div class="modal-content">
+      <h3>Book Flight <span id="modalFlightNum"></span></h3>
+      <form id="bookingForm">
+        <input type="hidden" id="bookingFlightId">
+        <div class="form-group">
+          <label>Passenger Name</label>
+          <input type="text" id="passengerName" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="passengerEmail" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit">Confirm Booking</button>
+        </div>
+      </form>
+      <div class="success-msg" id="successMsg" style="display:none"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+
+    async function loadAirports() {
+      const res = await fetch(`${API}/api/airports`);
+      const airports = await res.json();
+      const opts = airports.map(a => `<option value="${a.id}">${a.city} (${a.code})</option>`).join('');
+      document.getElementById('origin').innerHTML = '<option value="">Any origin</option>' + opts;
+      document.getElementById('destination').innerHTML = '<option value="">Any destination</option>' + opts;
+    }
+
+    async function searchFlights(e) {
+      e?.preventDefault();
+      const params = new URLSearchParams();
+      const origin = document.getElementById('origin').value;
+      const dest = document.getElementById('destination').value;
+      const date = document.getElementById('date').value;
+      if (origin) params.set('origin', origin);
+      if (dest) params.set('destination', dest);
+      if (date) params.set('date', date);
+
+      const res = await fetch(`${API}/api/flights?${params}`);
+      const flights = await res.json();
+      renderFlights(flights);
+    }
+
+    function renderFlights(flights) {
+      const list = document.getElementById('flightsList');
+      if (!flights.length) {
+        list.innerHTML = '<div class="no-flights">No flights found. Try different search criteria.</div>';
+        return;
+      }
+      list.innerHTML = flights.map(f => `
+        <div class="flight-card">
+          <div>
+            <div class="flight-number">${f.flight_number}</div>
+            <div class="flight-time">${new Date(f.departure_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div class="flight-city">${f.origin_city} (${f.origin_code})</div>
+          </div>
+          <div class="flight-route">
+            <span></span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+            <span></span>
+          </div>
+          <div style="text-align:right">
+            <div class="flight-time">${new Date(f.arrival_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div class="flight-city">${f.dest_city} (${f.dest_code})</div>
+          </div>
+          <div class="flight-price">
+            <div class="amount">$${f.price}</div>
+            <button onclick="openBooking(${f.id}, '${f.flight_number}')">Book</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openBooking(id, num) {
+      document.getElementById('bookingFlightId').value = id;
+      document.getElementById('modalFlightNum').textContent = num;
+      document.getElementById('successMsg').style.display = 'none';
+      document.getElementById('bookingForm').style.display = 'block';
+      document.getElementById('bookingModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('bookingModal').classList.remove('active');
+    }
+
+    async function submitBooking(e) {
+      e.preventDefault();
+      const res = await fetch(`${API}/api/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flight_id: document.getElementById('bookingFlightId').value,
+          passenger_name: document.getElementById('passengerName').value,
+          email: document.getElementById('passengerEmail').value
+        })
+      });
+      const booking = await res.json();
+      document.getElementById('bookingForm').style.display = 'none';
+      document.getElementById('successMsg').textContent = `Booking confirmed! Reference: ${booking.booking_ref}`;
+      document.getElementById('successMsg').style.display = 'block';
+    }
+
+    document.getElementById('searchForm').addEventListener('submit', searchFlights);
+    document.getElementById('bookingForm').addEventListener('submit', submitBooking);
+    loadAirports();
+    searchFlights();
+  </script>
+</body>
+</html>
