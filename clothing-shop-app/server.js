@@ -6,10 +6,23 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+// Configure PostgreSQL connection with proper SSL for Aiven
+const createPool = () => {
+  const url = new URL(process.env.DATABASE_URL);
+  url.searchParams.delete('sslmode');
+
+  const config = { connectionString: url.toString() };
+
+  if (process.env.PROJECT_CA_CERT) {
+    config.ssl = { ca: Buffer.from(process.env.PROJECT_CA_CERT, 'base64').toString() };
+  } else {
+    config.ssl = { rejectUnauthorized: false };
+  }
+
+  return new Pool(config);
+};
+
+const pool = createPool();
 
 // Get all products
 app.get('/api/products', async (req, res) => {
@@ -126,6 +139,6 @@ app.get('/api/inventory', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Clothing Shop running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Clothing Shop running on port ${PORT}`);
 });
